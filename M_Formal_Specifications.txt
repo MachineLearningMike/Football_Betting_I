@@ -1,0 +1,222 @@
+
+Formal Specifications and Logic.
+
+#---------------------------------------------------------- Elementray types.
+
+Bin = { 0, 1 }
+Probable = [ 0, 1 ]
+
+Q = Queries : Nat % set
+
+F = Features = pow( Real, nF )
+O : Odds = Q -> Real
+H : Happened = Q -> B
+
+G = Game = F x Odds
+G^ = G x H = F x Odds x H
+
+pH : probable Happened = Q -> Probable
+
+#---------------------------------------------------------- Compound types.
+
+OH1 : Q x O x H -> Real
+OH1( q, odds, h ) === odds( q ) x h( q ) - 1
+
+S = Stake = Real
+P = Profit = Real
+SB = Stake_Bin = Bin
+
+Label : Q x G^ -> Real
+Label( q, g^ ) === Either H( q ) Or OH1( q, O( G(g^) ), H(g^) )
+
+Pred : Q x G -> VDomain( Label )
+
+True_Label : VDomain( Label ) -> Bool
+
+Eligible : Q x G -> Bin
+
+Train^ = G^ % set 
+Valid^ = G^ % set 
+Test^ = G^ % set 
+Predict = Predict = G % set 
+
+SStrategy : Q x Probable -> S
+
+#---------------------------------------------------------- Viewers ----------------------------
+
+Viewer : Q x G -> Probable
+
+Output.Viewer : Q x G x Viewer -> Probable
+Output.Viewer( q, g, viewer ) === viewer( q, g )
+
+Stake.Viewer : Q x G x Viewer x Eligible -> S
+Stake.Viewer( q, g, viewer, eligible ) === SStrategy( O( g )( q ), Output.Viewer( q, g, viewer ) x eligible( q, g ) )
+
+Profit.Viewer : Q x G^ x Viewer x Eligible -> P
+Profit.Viewer( q, g^, viewer, eligible ) === OH1( q, O( g )( q ), H(g^) ) x Stake.Viewer( q, G(g^), viewer, eligible( q, g) )
+
+Get_SP : Q x G^ x Viewer x Eligible -> S x B
+Get_SP( q, g^, viewer, eligible ) === ( Stake.Viewer( q, G(g^), viewer, eligible( q, g ) ), Profit.Viewer( q, g^, viewer, eligible( q, g ) ) )
+
+
+Create_Viewer : G^ % set x G^ % set -> Viewer     # Viewer : Q x G -> Probable
+
+Create_Viewers : G^ % set x G^ % set x Nat -> Viewer % set
+Create_Viewers( train^, valid^, nViewers ) === { Create_Viewer( train^, valid^ ) | total nViewers }
+
+Summarize_Viewers : Viewer % set -> Viewer
+
+
+Stakes : Q x G x Viewer -> S
+Profits : Q x G x Viewer -> P
+Stakes_Bin : Q x G x Viewer -> SB
+
+#---------------------------------------------------------- Views ----------------------------
+
+View = pow( Real, nV )
+Views : Q x G x Viewer -> View
+
+Create_View : Q x G x Viewer x G^ % set x G^ % set -> View
+
+Create_Views : Q % set x G % set x Viewer % set x G^ % set x G^ % set -> Views
+Axiom: Create_Views( queries, games, viewers, train^, valid^ )( q, g, vr ) = Create_View( q, g, vr, train^, valid^ ), for q, g, vr in queries, games, viewers
+
+#---------------------------------------------------------- Summary ----------------------------
+
+Summary = pow( Real, nS )
+Summaries : Q x G -> Summary
+
+Create_Summary : Q x G x Views -> summary
+Create_Summary( q, g, views ) === fun_summary( views[ q, g, : ] )
+# Views : Q x G x Viewer -> View
+
+Create_Summaries : Q % set x G % set x Views -> Summaries
+Axiom: Create_Summaries( queries, games, views )( q, g ) = Create_Summary( q, g, views ), for q, g in queries, games
+
+Summary^ = Summary x Labels
+Summaries^ : Q x G^ -> Summary^
+
+Create_Summary^ : Q x G^ x Views -> Summary^
+Create_Summary^( q, g^, views ) === ( Create_Summary( q, G(g^), views ), Labels( q, g^ ) )
+
+Label_Summaries : Summaries x Labels -> Summaries^
+Axiom: Label_Summaries( summaries, labels )( q, g^ ) = ( summaries( q, G(g^) ), Labels( q, g^ ) ), for q, g^ in queries, games^
+
+#---------------------------------------------------------- Models ----------------------------
+
+Model : Summary -> VDomain( Label ), or Summary( Summary^ ) -> VDomain(T)( Summary^ ), or pow( Real, nS ) -> Real
+Models : Q % set -> Model
+
+Get_Model : Summary^ % set x Q -> Model
+Get_Models : Summary^ % set x Q : set -> Models
+
+Create_Models : Q % set x G^ % set x Viewer % set x Train^ x Valid^ -> Models
+Create_Models( queries, example_games^, viewers, train^, valid^ ) === 
+{
+    views = Create_Views( queries, G(example_games^), viewers, train^, valid^ )
+    # Create_Views : Q % set x G % set x Viewer % set x G^ % set x G^ % set -> Views
+
+    summaries = Create_Summaries( queries, G(example_games^), views )
+    # Create_Summaries : Q % set x G % set x Views -> Summaries
+
+    summaries^ = Label_Summaries( summaries, Labels( example_games^ ) )
+    # Summaries x Labels -> Summaries^
+    # Summaries^ : Q x G^ -> Summary^
+
+    models = Get_Models( summaries^, queries )
+    # Get_Models : Summary^ % set x Q : set -> Models
+
+    return models
+}
+
+Apply_Models : Models x Q x G x Summaries -> VDomain( Preds )
+Apply_Models( models, q, g, summaries ) = models(q)( summaries( q, g ) )  # VDomain( Preds ) = VDomain( Labels )
+
+Apply_Models_Wholesale : Models x Q % set x G % set x Summaries -> Preds
+Apply_Models_Wholesale( models, qset, gset, summaries )( q, g ) = Apply_Models( models, q, g, summaries ) for q, g in qset, gset
+
+#---------------------------------------------------------- Eligible ----------------------------
+
+Calculate_Eligible : Q % set x G % set x Viewer % set x Models x G^ % set x G^ % set -> Eligible
+Calculate_Eligible( queries, games, viewers, models, train^, valid^ ) === 
+{
+    views = Create_Views( queries, games, viewers, train^, valid^ )
+    # Create_Views : Q % set x G % set x Viewer % set x G^ % set x G^ % set -> Views
+
+    summaries = Create_Summaries( queries, games, views )
+    # Create_Summaries : Q % set x G % set x Views -> Summaries
+    # Summaries : Q x G -> Summary
+
+    preds = Apply_Models_Wholesale( models, queries, games, summaries )
+    # Apply_Models_Wholesale : Models x Q % set x G % set x Summaries -> Preds
+
+    eligible = fun_eligible( preds )
+
+    return eligible
+}
+
+#---------------------------------------------------------- Build Process ----------------------------
+
+Build_Process : Q % set x G^ % set x G^ % set x G^ % set x Nat -> Viewer % set x Viewer x Models x Real
+Build_Process( queries, train^, valid^, test^, nViewers ) ===
+{
+    #---------------------------------------- Create viewers.
+    param_set = Random( Parma, nViewers )
+    viewers = Create_Viewers( train^, valid^, param_set )
+    # Create_Viewers : G^ % set x G^ % set x Param % set -> Viewer % set
+
+    final_viewer = Summarize_Viewers( viewers )
+    # Summarize_Viewers : Viewer % set -> Viewer
+
+    #---------------------------------------- Create models.
+    models = Create_Models( queries, example_games^, viewers, train^, valid^ )
+    # Create_Models : Q % set x G^ % set x Viewer % set x Train^ x Valid^ -> Models
+
+    #---------------------------------------- Test models.
+    eligible = Calculate_Eligible( queries, G(test^), viewers, models, train^, valid^ )
+    # Calculate_Eligible : Q % set x G % set x Viewer % set x Models x G^ % set x G^ % set -> Eligible
+    # Eligible : Q % set x G -> Bin
+
+    SBP = Get_SP(queries, test^, final_viewer, eligible )
+    # Get_SP : Q x G^ x Viewer x Eligible -> S x P
+    performance = fun_performance( SP )
+
+    return ( viewers, final_viewer, models, performance )
+}
+
+#---------------------------------------------------------- Produce Stakes ----------------------------
+
+Produce_Stakes : Q %R set x G % set x Viewer % set x Viewer x Models x G % set x G % set -> Stakes
+Produce_Stakes( queries, predict_games, viewers, final_viewer, models, train^, valid^ ) ===
+{
+    eligible = Calculate_Eligible( queries, predict_games, viewers, models, train^, valid^ )
+    # Calculate_Eligible : Q % set x G % set x Viewer % set x Models x G^ % set x G^ % set -> Eligible
+    # Eligible : Q % set x G -> Bin
+
+    stakes = final_viewer( queries, predict_games, final_viewer, eligible )
+
+    return stakes
+}
+
+#---------------------------------------------------------- Go ----------------------------
+
+Go : Q % set x G^ % set x G^ % set x G^ % set x Nat x Q % set -> Stakes
+Go( queries, train^, valid^, test^, nViewers, predict_games ) ===
+{
+    viewers, final_viewer, models, performance = Build_Process( queries, train^, valid^, test^, nViewers )
+
+    stakes = Produce_Stakes( queries, predict_games, viewers, final_viewer, models, train^, valid^ )
+
+    return stakes
+}
+
+#---------------------------------------------------------- Now! ----------------------------
+
+queries : Q % set
+train^ : Train^
+valid : Valid^
+test : Test^
+nViewers : Nat
+predict_games : Game % set
+
+stakes = Go( queries, train^, valid^, test^, nViewers, predict_games )
