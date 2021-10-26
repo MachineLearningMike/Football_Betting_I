@@ -201,5 +201,4 @@ def Disable_GPU() :
         # Invalid device or cannot modify virtual devices once initialized.
         pass
 
-
 if super_config['GPU'] is False : Disable_GPU()
