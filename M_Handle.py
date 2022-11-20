@@ -3,9 +3,9 @@ import tensorflow as tf
 from M_Config import *
 
 from Task_Base import *
-from Task_GLogits import *
+# from Task_GLogits import *
 from Task_Happs import *
-from Task_Goals import *
+# from Task_Goals import *
 from Task_Contest import *
 
 from M_Model_Slots import *

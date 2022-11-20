@@ -24,7 +24,7 @@ def ZFunction( filterSet, filterCore, query_id, x, y ) :
     x = np.expand_dims( x, axis = 0 ); y = np.expand_dims( y, axis = 0 )
     z = model.predict( x = { 'h' : x, 'a' : y } )
     z = np.squeeze( z )
-    return z
+    return z  
 
 def XFunction( filterSet, query_id, x, y ) :
     output = filterSet[query_id] ( h, a )

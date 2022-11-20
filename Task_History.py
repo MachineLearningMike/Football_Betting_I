@@ -38,7 +38,7 @@ class History() :
     def Load_Dictionaries( self, path_from_caller = None, dict_names = [], reduce = 'last', list_mode = False  ) :
 
         path = None
-        if path_from_caller is not None : path = os.path.join( super_config['History'], path_from_caller )
+        if path_from_caller is not None : path = os.path.join( super_config['Dictionary'], path_from_caller )
         else : path = self.dictionaries_path
 
         dictionaries = {}

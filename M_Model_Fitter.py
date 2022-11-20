@@ -110,10 +110,13 @@ class Model_Fitter() :
 
         output_names = [ model.get_config()['output_layers'][n][0] for n in range( len( model.get_config()['output_layers'] ) ) ]
 
-        x_train_data = { name : x_data['train'] for name in output_names }
-        y_train_data = { name : y_data['train'] for name in output_names }
+        # x_train_data = { name : x_data['train'] for name in output_names }
+        # y_train_data = { name : y_data['train'] for name in output_names }
+        # valid_data = ( { name : x_data['valid'] for name in output_names }, { name : y_data['valid'] for name in output_names } )
 
-        valid_data = ( { name : x_data['valid'] for name in output_names }, { name : y_data['valid'] for name in output_names } )
+        x_train_data = x_data['train']
+        y_train_data = y_data['train']
+        valid_data = (x_data['valid'], y_data['valid'])
 
         callbacks = []
 

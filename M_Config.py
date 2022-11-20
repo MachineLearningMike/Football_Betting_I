@@ -10,6 +10,7 @@ Root = os. getcwd()
 super_config['Root'] = Root
 super_config['Data'] = os.path.join( Root, 'Data' )
 super_config['History'] = os.path.join( Root, 'History' )
+super_config['Dictionary'] = os.path.join( Root, 'Dictionary' )
 super_config['Models'] = os.path.join( Root, 'Models' )
 super_config['Reports'] = os.path.join( Root, 'Reports' )
 super_config['Summary'] = os.path.join( Root, 'Summary' )
