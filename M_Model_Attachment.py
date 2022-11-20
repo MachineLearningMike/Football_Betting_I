@@ -260,7 +260,6 @@ class Attachment( Model_Fitter ) :
 
         return model
 
-
     def Fit_Model( self, model, train_params ) :
 
         print( "\nD. ======= Att-{}, Fit_Model: Starting.........\n".format( self.att_id  ) )
